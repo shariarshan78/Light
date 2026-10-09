@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -144,9 +145,9 @@
   </form>
 
   <script>
-    // ========== এখানে তোমার API KEY বসাও ==========
+    // ========== GROQ API KEY ==========
     const GROQ_API_KEY = "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";
-    // =============================================
+    // ==================================
 
     const chat = document.getElementById("chat");
     const form = document.getElementById("chat-form");
@@ -156,15 +157,12 @@
     const SYSTEM_PROMPT = `তুমি Light। একজন বন্ধুসুলভ, স্মার্ট এবং সাহায্যকারী AI।
 
 ভাষার নিয়ম:
-- ইউজার বাংলায় লিখলে বাংলায় উত্তর দাও, ইংরেজিতে লিখলে ইংরেজিতে উত্তর দাও
+- ইউজার বাংলায় লিখলে বাংলায় উত্তর দাও
+- ইংরেজিতে লিখলে ইংরেজিতে উত্তর দাও
 - Banglish-এ লিখলে Banglish-এ উত্তর দাও
 - মিক্স করলে স্বাভাবিকভাবে মিক্স করে উত্তর দাও
 
-তুমি ভালো পারো:
-- বাংলা ↔ ইংরেজি ট্রান্সলেশন
-- Gen Z slang (rizz, no cap, fr, slay, sigma, delulu ইত্যাদি)
-- সাধারণ কথাবার্তা, আইডিয়া, সাহায্য
-ব্যক্তিত্ব: বন্ধুসুলভ, একটু প্লেফুল, ক্লিয়ার এবং কাজে লাগার মতো উত্তর দাও।`;
+ব্যক্তিত্ব: বন্ধুসুলভ, স্মার্ট, হেল্পফুল এবং কাজে লাগার মতো উত্তর দাও।`;
 
     let messages = [
       { role: "system", content: SYSTEM_PROMPT }
@@ -179,15 +177,15 @@
       return div;
     }
 
-    addMessage("system", "👋 আমি Light (Cloud AI)\nএখন অনেক দ্রুত এবং বাংলা ভালো বুঝি।\nকিছু একটা লিখে পাঠাও!");
+    addMessage("system", "👋 আমি Light (Cloud AI)\nএখন অনেক দ্রুত এবং ভালো বুঝি।\nকিছু একটা লিখে পাঠাও!");
 
     form.onsubmit = async (e) => {
       e.preventDefault();
       const text = promptInput.value.trim();
       if (!text) return;
 
-      if (!GROQ_API_KEY || GROQ_API_KEY === "YOUR_GROQ_API_KEY_HERE") {
-        addMessage("system", "⚠️ আগে কোডে তোমার Groq API Key বসাও!");
+      if (!GROQ_API_KEY) {
+        addMessage("system", "⚠️ API Key পাওয়া যায়নি!");
         return;
       }
 
@@ -208,7 +206,7 @@
             "Authorization": `Bearer ${GROQ_API_KEY}`
           },
           body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
+            model: "llama-3.1-8b-instant",
             messages: messages,
             temperature: 0.7,
             stream: false
