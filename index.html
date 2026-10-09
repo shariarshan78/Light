@@ -155,18 +155,16 @@
 
     const SYSTEM_PROMPT = `তুমি Light। একজন বন্ধুসুলভ, স্মার্ট এবং সাহায্যকারী AI।
 
-ভাষার নিয়ম:
-- ইউজার বাংলায় লিখলে বাংলায় উত্তর দাও
-- ইংরেজিতে লিখলে ইংরেজিতে উত্তর দাও
+ভাষার নিয়ম:
+- ইউজার বাংলায় লিখলে বাংলায় উত্তর দাও, ইংরেজিতে লিখলে ইংরেজিতে উত্তর দাও
 - Banglish-এ লিখলে Banglish-এ উত্তর দাও
 - মিক্স করলে স্বাভাবিকভাবে মিক্স করে উত্তর দাও
 
 তুমি ভালো পারো:
 - বাংলা ↔ ইংরেজি ট্রান্সলেশন
 - Gen Z slang (rizz, no cap, fr, slay, sigma, delulu ইত্যাদি)
-- সাধারণ কথাবার্তা, আইডিয়া, সাহায্য
-
-ব্যক্তিত্ব: বন্ধুসুলভ, একটু প্লেফুল, ক্লিয়ার এবং কাজে লাগার মতো উত্তর দাও।`;
+- সাধারণ কথাবার্তা, আইডিয়া, সাহায্য
+ব্যক্তিত্ব: বন্ধুসুলভ, একটু প্লেফুল, ক্লিয়ার এবং কাজে লাগার মতো উত্তর দাও।`;
 
     let messages = [
       { role: "system", content: SYSTEM_PROMPT }
@@ -188,8 +186,8 @@
       const text = promptInput.value.trim();
       if (!text) return;
 
-      if (GROQ_API_KEY === "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") {
-        addMessage("system", "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");
+      if (!GROQ_API_KEY || GROQ_API_KEY === "YOUR_GROQ_API_KEY_HERE") {
+        addMessage("system", "⚠️ আগে কোডে তোমার Groq API Key বসাও!");
         return;
       }
 
@@ -227,7 +225,7 @@
           messages.push({ role: "assistant", content: reply });
         }
       } catch (err) {
-        assistantDiv.textContent = "❌ নেটওয়ার্ক এরর: " + err.message;
+        assistantDiv.textContent = "❌ নেটওয়ার্ক এরর: " + err.message;
       }
 
       promptInput.disabled = false;
