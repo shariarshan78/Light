@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Light — Offline + Online AI</title>
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💡</text></svg>" />
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card: #1e293b;
+      --border: #334155;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --user: #0ea5e9;
+      --danger: #f87171;
+      --online: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .header {
+      background: var(--card);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .logo {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .logo small { font-size: 0.72rem; color: var(--muted); font-weight: 400; }
+    .controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    select, button, .icon-btn {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 7px 10px;
+      border-radius: 9px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    button:hover:not(:disabled), .icon-btn:hover:not(:disabled) { background: #475569; }
+    button:disabled, .icon-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    #load-btn {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .mode-btn {
+      font-weight: 600;
+      min-width: 78px;
+    }
+    .mode-btn.offline { background: #334155; }
+    .mode-btn.online { background: var(--online); color: #052e16; border-color: var(--online); }
+    .icon-btn {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0; font-size: 1rem;
+    }
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    #chat {
+      flex: 1; overflow-y: auto; padding: 14px;
+      display: flex; flex-direction: column; gap: 12px;
+      scroll-behavior: smooth;
+    }
+    .msg {
+      max-width: 88%; padding: 11px 14px; border-radius: 16px;
+      line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+      font-size: 0.93rem; animation: fadeIn 0.22s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: none; }
+    }
+    .user {
+      align-self: flex-end; background: var(--user); color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .assistant {
+      align-self: flex-start; background: var(--card);
+      border: 1px solid var(--border); border-bottom-left-radius: 4px;
+    }
+    .system {
+      align-self: center; background: #1e293b88; color: var(--muted);
+      font-size: 0.8rem; text-align: center; max-width: 95%;
+      border: 1px dashed var(--border);
+    }
+    .input-area {
+      padding: 10px 12px; background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex; gap: 7px; align-items: center;
+    }
+    #prompt {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 11px 14px; border-radius: 12px;
+      font-size: 0.95rem; outline: none;
+    }
+    #prompt:focus { border-color: var(--accent); }
+    #send-btn, #mic-btn, #search-btn {
+      width: 42px; height: 42px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; border: none; cursor: pointer;
+    }
+    #send-btn { background: var(--accent); color: #0f172a; }
+    #mic-btn { background: #334155; color: var(--text); }
+    #search-btn {
+      background: #0f766e; color: white;
+      display: none;
+    }
+    #search-btn.show { display: flex; }
+    #mic-btn.recording {
+      background: var(--danger);
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.07); }
+    }
+    .progress-box {
+      display: none; padding: 8px 14px;
+      background: var(--card); border-bottom: 1px solid var(--border);
+    }
+    .progress-bar {
+      height: 5px; background: #334155; border-radius: 3px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: var(--accent); width: 0%; transition: width 0.3s;
+    }
+    .progress-text { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+    .toolbar { display: flex; gap: 5px; }
+    .history-panel {
+      display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg); z-index: 20; flex-direction: column;
+    }
+    .history-panel.active { display: flex; }
+    .history-header {
+      padding: 12px 14px; background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .history-list { flex: 1; overflow-y: auto; padding: 10px; }
+    .history-item {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px; margin-bottom: 8px; cursor: pointer;
+    }
+    .history-item:hover { border-color: var(--accent); }
+    .history-item small { color: var(--muted); font-size: 0.72rem; }
+    .status-bar {
+      font-size: 0.72rem; color: var(--muted); padding: 3px 14px;
+      background: #0f172a; text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      💡 Light
+      <small>Offline + Online</small>
+    </div>
+    <div class="controls">
+      <button class="mode-btn offline" id="mode-btn">Offline</button>
+      <select id="model-select">
+        <option value="Phi-3.5-mini-instruct-q4f16_1-MLC" selected>Phi-3.5 Mini (Best)</option>
+        <option value="Llama-3.2-3B-Instruct-q4f32_1-MLC">Llama 3.2 3B</option>
+        <option value="Llama-3.2-1B-Instruct-q4f32_1-MLC">Llama 3.2 1B</option>
+        <option value="SmolLM2-360M-Instruct-q4f32_1-MLC">SmolLM2 360M (হালকা)</option>
+      </select>
+      <button id="load-btn">Change</button>
+      <div class="toolbar">
+        <button class="icon-btn" id="history-btn" title="History">📜</button>
+        <button class="icon-btn" id="clear-btn" title="Clear">🗑️</button>
+        <button class="icon-btn" id="speak-toggle" title="Speak">🔇</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-box" id="progress-box">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-text" id="progress-text">0%</div>
+  </div>
+
+  <div class="status-bar" id="status-bar">অটো লোড শুরু হচ্ছে...</div>
+
+  <div class="main">
+    <div id="chat"></div>
+
+    <div class="history-panel" id="history-panel">
+      <div class="history-header">
+        <strong>Chat History</strong>
+        <button class="icon-btn" id="close-history">✕</button>
+      </div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+    <form class="input-area" id="chat-form">
+      <button type="button" id="mic-btn" title="Voice" disabled>🎤</button>
+      <button type="button" id="search-btn" title="Web Search">🔍</button>
+      <input id="prompt" type="text" placeholder="Bangla / English / Banglish লিখো..." disabled autocomplete="off" />
+      <button type="submit" id="send-btn" disabled>➤</button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
+
+    const chat = document.getElementById("chat");
+    const form = document.getElementById("chat-form");
+    const promptInput = document.getElementById("prompt");
+    const sendBtn = document.getElementById("send-btn");
+    const loadBtn = document.getElementById("load-btn");
+    const modelSelect = document.getElementById("model-select");
+    const progressBox = document.getElementById("progress-box");
+    const progressFill = document.getElementById("progress-fill");
+    const progressText = document.getElementById("progress-text");
+    const micBtn = document.getElementById("mic-btn");
+    const searchBtn = document.getElementById("search-btn");
+    const historyBtn = document.getElementById("history-btn");
+    const clearBtn = document.getElementById("clear-btn");
+    const speakToggle = document.getElementById("speak-toggle");
+    const historyPanel = document.getElementById("history-panel");
+    const historyList = document.getElementById("history-list");
+    const closeHistory = document.getElementById("close-history");
+    const statusBar = document.getElementById("status-bar");
+    const modeBtn = document.getElementById("mode-btn");
+
+    let engine = null;
+    let autoSpeak = false;
+    let isRecording = false;
+    let isGenerating = false;
+    let isLoading = false;
+    let isOnlineMode = false;
+    let recognition = null;
+
+    const DEFAULT_MODEL = "Phi-3.5-mini-instruct-q4f16_1-MLC";
+
+    const OFFLINE_PROMPT = `You are Light — a friendly, helpful, smart offline AI assistant.
+
+Language rules:
+- Reply in the same style as the user (Pure Bangla / English / Banglish).
+- Excellent at Bangla ↔ English translation and Gen Z slang (no cap, fr, slay, rizz, sigma, etc.).
+
+Personality: Friendly, slightly playful, supportive. Keep answers clear and useful.`;
+
+    const ONLINE_PROMPT = `You are Light — a friendly, helpful AI that can work both offline and online.
+
+You are currently in ONLINE mode.
+- You can suggest web searches and help the user find current information.
+- When the user asks something that needs latest info (news, prices, current events), suggest a good search query and tell them to click the 🔍 Search button.
+- Still reply in the same language style as the user (Bangla / English / Banglish).
+- You remain helpful, clear and friendly.
+
+If the user pastes search results, summarize them nicely.`;
+
+    let messages = [{ role: "system", content: OFFLINE_PROMPT }];
+
+    function setStatus(text) {
+      statusBar.textContent = text;
+    }
+
+    function addMessage(role, text) {
+      const div = document.createElement("div");
+      div.className = `msg ${role}`;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+      return div;
+    }
+
+    function updateModeUI() {
+      if (isOnlineMode) {
+        modeBtn.textContent = "Online";
+        modeBtn.classList.remove("offline");
+        modeBtn.classList.add("online");
+        searchBtn.classList.add("show");
+        messages[0] = { role: "system", content: ONLINE_PROMPT };
+        setStatus(engine ? "✅ Online Mode — Search available" : "Online Mode (মডেল লোড করো)");
+      } else {
+        modeBtn.textContent = "Offline";
+        modeBtn.classList.remove("online");
+        modeBtn.classList.add("offline");
+        searchBtn.classList.remove("show");
+        messages[0] = { role: "system", content: OFFLINE_PROMPT };
+        setStatus(engine ? "✅ Offline Mode — Local AI" : "Offline Mode");
+      }
+    }
+
+    modeBtn.onclick = () => {
+      isOnlineMode = !isOnlineMode;
+      updateModeUI();
+      addMessage("system", isOnlineMode
+        ? "🌐 Online Mode চালু।\nএখন 🔍 Search বাটন দিয়ে ওয়েবে সার্চ করতে পারবে।\nকারেন্ট তথ্য লাগলে Search বাটন ব্যবহার করো।"
+        : "📴 Offline Mode চালু।\nএখন সম্পূর্ণ লোকাল মডেল দিয়ে চলবে।");
+    };
+
+    function saveHistory() {
+      try {
+        const history = JSON.parse(localStorage.getItem("light_history") || "[]");
+        const preview = messages
+          .filter(m => m.role !== "system")
+          .slice(-4)
+          .map(m => (m.role === "user" ? "🧑 " : "💡 ") + m.content.slice(0, 50))
+          .join("\n");
+        history.unshift({
+          id: Date.now(),
+          time: new Date().toLocaleString("bn-BD"),
+          preview,
+          messages: JSON.parse(JSON.stringify(messages))
+        });
+        if (history.length > 25) history.length = 25;
+        localStorage.setItem("light_history", JSON.stringify(history));
+      } catch (e) {}
+    }
+
+    function loadHistoryList() {
+      const history = JSON.parse(localStorage.getItem("light_history") || "[]");
+      historyList.innerHTML = history.length === 0
+        ? "<p style='color:#94a3b8;text-align:center;padding:20px'>কোনো history নেই</p>"
+        : history.map(h => `
+          <div class="history-item" data-id="${h.id}">
+            <small>${h.time}</small>
+            <div style="margin-top:5px;white-space:pre-line;font-size:0.82rem">${h.preview}</div>
+          </div>`).join("");
+
+      historyList.querySelectorAll(".history-item").forEach(item => {
+        item.onclick = () => {
+          const h = history.find(x => x.id == item.dataset.id);
+          if (h) {
+            messages = h.messages;
+            chat.innerHTML = "";
+            messages.filter(m => m.role !== "system").forEach(m => addMessage(m.role, m.content));
+            historyPanel.classList.remove("active");
+          }
+        };
+      });
+    }
+
+    function speak(text) {
+      if (!autoSpeak || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = /[\u0980-\u09FF]/.test(text) ? "bn-BD" : "en-US";
+      u.rate = 1.02;
+      window.speechSynthesis.speak(u);
+    }
+
+    // Voice
+    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onresult = (e) => {
+        promptInput.value = e.results[0][0].transcript;
+        isRecording = false;
+        micBtn.classList.remove("recording");
+      };
+      recognition.onerror = recognition.onend = () => {
+        isRecording = false;
+        micBtn.classList.remove("recording");
+      };
+    } else {
+      micBtn.style.display = "none";
+    }
+
+    micBtn.onclick = () => {
+      if (!recognition || isGenerating || isLoading) return;
+      if (isRecording) { recognition.stop(); return; }
+      isRecording = true;
+      micBtn.classList.add("recording");
+      recognition.lang = "bn-BD";
+      try { recognition.start(); } catch (e) {
+        isRecording = false;
+        micBtn.classList.remove("recording");
+      }
+    };
+
+    // Web Search button
+    searchBtn.onclick = () => {
+      const q = promptInput.value.trim() || " ";
+      const url = `https://duckduckgo.com/?q=${encodeURIComponent(q)}`;
+      window.open(url, "_blank");
+      addMessage("system", `🔍 সার্চ খোলা হয়েছে: "${q}"\nরেজাল্ট দেখে প্রয়োজন হলে কপি করে এখানে পেস্ট করতে পারো।`);
+    };
+
+    historyBtn.onclick = () => {
+      loadHistoryList();
+      historyPanel.classList.add("active");
+    };
+    closeHistory.onclick = () => historyPanel.classList.remove("active");
+
+    clearBtn.onclick = () => {
+      if (confirm("Chat মুছে ফেলতে চাও?")) {
+        messages = [{ role: "system", content: isOnlineMode ? ONLINE_PROMPT : OFFLINE_PROMPT }];
+        chat.innerHTML = "";
+        addMessage("system", "Chat clear করা হয়েছে 💡");
+      }
+    };
+
+    speakToggle.onclick = () => {
+      autoSpeak = !autoSpeak;
+      speakToggle.textContent = autoSpeak ? "🔊" : "🔇";
+      speakToggle.style.background = autoSpeak ? "#0ea5e9" : "";
+    };
+
+    async function loadModel(modelId, isAuto = false) {
+      if (isLoading) return;
+      if (!navigator.gpu) {
+        addMessage("system", "❌ WebGPU নেই। Chrome বা Edge ব্যবহার করো।");
+        return;
+      }
+
+      isLoading = true;
+      loadBtn.disabled = true;
+      modelSelect.disabled = true;
+      progressBox.style.display = "block";
+      progressFill.style.width = "0%";
+      setStatus(isAuto ? "অটো লোড হচ্ছে..." : "মডেল লোড হচ্ছে...");
+
+      try {
+        engine = await CreateMLCEngine(modelId, {
+          initProgressCallback: (report) => {
+            const percent = Math.floor((report.progress || 0) * 100);
+            progressFill.style.width = percent + "%";
+            progressText.textContent = `${percent}% — ${report.text || "লোড হচ্ছে..."}`;
+          }
+        });
+
+        promptInput.disabled = false;
+        sendBtn.disabled = false;
+        micBtn.disabled = false;
+        updateModeUI();
+        addMessage("system", isAuto
+          ? "✅ Light প্রস্তুত! (Phi-3.5 Mini)\nOffline/Online সুইচ করতে পারো।\nOnline মোডে 🔍 Search বাটন পাবে।"
+          : "✅ নতুন মডেল রেডি!");
+        progressBox.style.display = "none";
+      } catch (err) {
+        addMessage("system", "❌ লোড ব্যর্থ: " + err.message + "\nহালকা মডেল চেষ্টা করো।");
+        setStatus("লোড ব্যর্থ");
+        progressBox.style.display = "none";
+      }
+
+      isLoading = false;
+      loadBtn.disabled = false;
+      modelSelect.disabled = false;
+    }
+
+    loadBtn.onclick = () => loadModel(modelSelect.value, false);
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      if (!engine || isGenerating || isLoading) return;
+
+      const text = promptInput.value.trim();
+      if (!text) return;
+
+      isGenerating = true;
+      promptInput.value = "";
+      promptInput.disabled = true;
+      sendBtn.disabled = true;
+      micBtn.disabled = true;
+      setStatus("উত্তর তৈরি হচ্ছে...");
+
+      addMessage("user", text);
+      messages.push({ role: "user", content: text });
+
+      const assistantDiv = addMessage("assistant", "▋");
+      let fullReply = "";
+
+      try {
+        const stream = await engine.chat.completions.create({
+          messages,
+          stream: true,
+          temperature: 0.7,
+        });
+
+        for await (const chunk of stream) {
+          const token = chunk.choices[0]?.delta?.content || "";
+          fullReply += token;
+          assistantDiv.textContent = fullReply + "▋";
+          chat.scrollTop = chat.scrollHeight;
+        }
+        assistantDiv.textContent = fullReply || "(কোনো উত্তর আসেনি)";
+        messages.push({ role: "assistant", content: fullReply });
+        saveHistory();
+        speak(fullReply);
+        updateModeUI();
+      } catch (err) {
+        assistantDiv.textContent = "❌ Error: " + err.message;
+      }
+
+      isGenerating = false;
+      promptInput.disabled = false;
+      sendBtn.disabled = false;
+      micBtn.disabled = false;
+      promptInput.focus();
+    };
+
+    // Start
+    addMessage("system", `👋 আমি Light — Offline + Online AI।
+
+• Offline → সম্পূর্ণ লোকাল
+• Online → সার্চ বাটন পাবে
+• Bangla / English / Banglish সব চলে
+• Voice + History আছে
+
+অটো লোড শুরু হচ্ছে...`);
+
+    setTimeout(() => loadModel(DEFAULT_MODEL, true), 500);
+  </script>
+</body>
+</html>
